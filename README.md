@@ -1,16 +1,16 @@
 # surrogatesPlay
 code for our surrogates game with City of Play
 
-##to stream video
+## to stream video
 
-###on RPi run:
+### on RPi run:
 
 ```cat video | nc.traditional 192.168.1.10 5000 & raspivid -o video -t 0 -w 640 -h 480```
 
 the IP address listed above is the Pi's address, *not* the listening computer's address
 
 
-###on listening Mac run:
+### on listening Mac run:
 
 ```netcat -l -p 5000 | mplayer -fps 60 -cache 1024 -```
 
@@ -22,7 +22,7 @@ https://altax.net/blog/low-latency-raspberry-pi-video-transmission/
 
 
 
-##to stream audio
+## to stream audio
 
 on Pi we are trying running something like:
 
