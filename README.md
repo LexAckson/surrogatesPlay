@@ -3,27 +3,22 @@ code for our surrogates game with City of Play
 
 ## to stream video
 
-### on RPi run:
+### First! on listening computer run:
 
-```cat video | nc.traditional 192.168.1.10 5000 & raspivid -o video -t 0 -w 640 -h 480```
+gst-launch-1.0 udpsrc port=5000 ! gdpdepay ! rtph264depay ! avdec_h264 ! videoconvert ! videoflip method=rotate-180 ! autovideosink sync=false
 
-the IP address listed above is the Pi's address, *not* the listening computer's address
+for windows there are some scripts that will run this for you: winServerAutorestart.ahk and wiggle.ahk which prevents screensaver by simulating mouse wiggle
 
+TODO get another pi and just use that for the listening computer
 
-### on listening Mac run:
+### Second! on RPi run:
 
-```netcat -l -p 5000 | mplayer -fps 60 -cache 1024 -```
+gst-launch-1.0 rpicamsrc bitrate=1000000 ! 'video/x-h264,width=640,height=480' ! h264parse ! queue ! rtph264pay config-interval=1 pt=96 ! gdppay ! udpsink host=192.168.0.100 port=5000
 
-
-these instructions slightly modified from:
-https://altax.net/blog/low-latency-raspberry-pi-video-transmission/
-
-
-
-
+TODO automate this in the script for the listening computer with SSH into the surrogate
 
 ## to stream audio
 
-on Pi we are trying running something like:
+we use a murmur server on the pi and mumble clients on each device
 
-```while true ; do arecord -D plughw:1,0 -r 44100 -c 2 -f S16_LE | avconv -i - -acodec mp3 -ab 320k -ac 1 -f rtp rtp://192.168.1.10:5001 ; sleep 1 ; done```
+TODO make the client autostart and join the server on the pi at system start
