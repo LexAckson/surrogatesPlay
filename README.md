@@ -41,5 +41,6 @@ USB sound adapter | ~$7 | https://www.amazon.com/gp/product/B00IRVQ0F8
 10 Ah USB battery | ~$24 | https://www.amazon.com/gp/product/B0194WDVHI
 lav mic<sup>1</sup> | ~$11 | https://www.amazon.com/gp/product/B01EH6PK0C/
 earbud | ~$5 | 
+**total** | **~$132** | 
 
 1: Using this lav, we actually had to cut off one of the mics and wire our own base; the base of this one is a TRRS and the USB sound adapter we had, as linked above, could not use that device as a mic. (It is probably a TRRS, and unusual to a standard jack, because it is a stereo mic.) Ultimately, we cut the TRS jack off of another cable and soldered the single lav mic to it.
