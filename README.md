@@ -44,3 +44,14 @@ earbud | ~$5 |
 **total** | **~$132** | 
 
 1: Using this lav, we actually had to cut off one of the mics and wire our own base; the base of this one is a TRRS and the USB sound adapter we had, as linked above, could not use that device as a mic. (It is probably a TRRS, and unusual to a standard jack, because it is a stereo mic.) Ultimately, we cut the TRS jack off of another cable and soldered the single lav mic to it.
+
+
+# Round two!
+
+In the next round of this project, we are going to be building capacity for more surrogates, and also working to make some improvements to our current hardware/software setup.
+
+## Hardware improvement
+
+We will be experimenting with bone conduction speakers for the surrogates, so that they do not need to wear an earbud to hear commands from their remote operator. The speaker will be built into the surrogate headwear, which should also increase the ease of donning the equipment.
+
+We will be testing the Adafruit Bone Conductor Transducer, [$9 from Adafruit directly](https://www.adafruit.com/product/1674) or [$15 via Amazon](https://www.amazon.com/Adafruit-Bone-Conductor-Transducer-Wires/dp/B00XW2OGAS), which is driven by a small 2.5W, 5V, class D amplifier, [$4 from Adafruit directly](https://www.adafruit.com/product/2130) or [$7 via Amazon](https://www.amazon.com/Audio-Development-Tools-Adafruit-Amplifier/dp/B00PY2YSI4).
