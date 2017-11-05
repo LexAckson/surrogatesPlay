@@ -50,6 +50,13 @@ earbud | ~$5 |
 
 In the next round of this project, we are going to be building capacity for more surrogates, and also working to make some improvements to our current hardware/software setup.
 
+To setup additional surrogate/host pies just clone the sd and follow these steps:
+* update hostname in: sudo nano /etc/hosts
+* update hostname in: sudo nano /etc/hostname
+* run init script: sudo /etc/init.d/hostname.sh
+* reboot: sudo reboot
+* assign permanent ip in the cop router
+
 ## Hardware improvement
 
 We will be experimenting with bone conduction speakers for the surrogates, so that they do not need to wear an earbud to hear commands from their remote operator. This is beneficial both because with bone conduction speakers, the surrogate's hearing shouldn't be impeded at all, and also the fact that they're hearing remote instructions will be less obvious since the person they're talking with won't see any evidence of their getting a remote feed. The transducer(s) will be built into the surrogate headwear, which should also increase the ease of donning the equipment.
