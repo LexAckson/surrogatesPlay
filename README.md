@@ -57,6 +57,8 @@ To setup additional surrogate/host pies just clone the sd and follow these steps
 * reboot: sudo reboot
 * assign permanent ip in the cop router
 
+Testing with external antenna on the pi, it seems we get about 2x range compared to the built-in.
+
 ## Hardware improvement
 
 We will be experimenting with bone conduction speakers for the surrogates, so that they do not need to wear an earbud to hear commands from their remote operator. This is beneficial both because with bone conduction speakers, the surrogate's hearing shouldn't be impeded at all, and also the fact that they're hearing remote instructions will be less obvious since the person they're talking with won't see any evidence of their getting a remote feed. The transducer(s) will be built into the surrogate headwear, which should also increase the ease of donning the equipment.

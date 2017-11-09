@@ -1,0 +1,123 @@
+*********************************Host pipeline*********************************
+``` old way
+gst-launch-1.0 udpsrc port=5000 ! gdpdepay ! rtph264depay ! avdec_h264 ! videoconvert ! videoflip method=rotate-180 ! autovideosink sync=false
+``` new ways
+test removing suspected useless elements and not specifying default parameters
+gst-launch-1.0 udpsrc uri=udp://192.168.0.104 ! rtph264depay ! avdec_h264 ! videoflip method=rotate-180 ! autovideosink sync=false
+test using rtpbin instead
+gst-launch-1.0 -v rtpbin name=rtpbin                                          \
+    udpsrc caps="application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H263-1998" \
+            port=5000 ! rtpbin.recv_rtp_sink_0                                \
+        rtpbin. ! rtph263pdepay ! ffdec_h263 ! xvimagesink                    \
+     udpsrc port=5001 ! rtpbin.recv_rtcp_sink_0                               \
+    udpsrc caps="application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1" \
+            port=5002 ! rtpbin.recv_rtp_sink_1                                \
+        rtpbin. ! rtpamrdepay ! amrnbdec ! alsasink                           \
+     udpsrc port=5003 ! rtpbin.recv_rtcp_sink_1                               \
+```
+
+udpsrc - souce element that gets input
+    * can specify the source address from here with uri=udp://192.168.0.104:5000
+    * default port is 5004, and we can probably just use that
+
+gdpdepay - takes our network gdp(gstreamer data protocol) packets and turns them into a stream
+    * bad?
+
+rtph264depay - Extracts H264 video from RTP packets
+    * good? also maybe we don't need gdpdepay since we have this?
+
+avdec_h264 - libav h264 decoder
+    * lots of source caps
+    * some interesting debug options
+    * sink is video/x-h264
+
+videoconvert - Converts video from one colorspace to another
+    * not sure why we need this?
+    * maybe it needs to happen at some point to convert camera colors to screen colors? probably can be moved to surrogate side
+
+videoflip - Flips and rotates video
+    * method=rotate-180
+    * handy
+
+autovideosink - Wrapper video sink for automatically detected video sink
+    * apparently we are using it to desync video from clock?
+    * maybe we don't need this
+    * actually this probably is displaying the video
+
+------------------------Notes----------------------------------
+playbin is an element that might just automatically do everything we need?
+    *playbin uri=udp://192.168.0.104
+
+################################ Second! on RPi run: #####################################
+
+```old way
+gst-launch-1.0 rpicamsrc bitrate=1000000 ! 'video/x-h264,width=640,height=480' ! h264parse ! queue ! rtph264pay config-interval=1 pt=96 ! gdppay ! udpsink host=192.168.0.100 port=5000
+```new ways
+test removing suspected useless elements and not specifying default parameters
+gst-launch-1.0 rpicamsrc bitrate=1000000 ! videoconvert ! 'video/x-h264,width=640,height=480' ! rtph264pay config-interval=1 ! udpsink
+test using rtpbin instead of all this other stuff TODO change audiotestsrc to whatever the mic will be
+gst-launch-1.0 rtpbin name=rtpbin \
+        rpicamsrc bitrate=1000000 ! videoconvert ! ffenc_h263 ! rtph263ppay ! rtpbin.send_rtp_sink_0 \
+                  rtpbin.send_rtp_src_0 ! udpsink port=5000                            \
+                  rtpbin.send_rtcp_src_0 ! udpsink port=5001 sync=false async=false    \
+        audiotestsrc ! amrnbenc ! rtpamrpay ! rtpbin.send_rtp_sink_1                   \
+                  rtpbin.send_rtp_src_1 ! udpsink port=5002                            \
+                  rtpbin.send_rtcp_src_1 ! udpsink port=5003 sync=false async=false    \
+```
+
+rpicamsrc - gets video from the webcam on the rPi,
+    * TODO run this on the pi to get details
+
+'video/x-h264,width=640,height=480' - caps filter, forces linked elements to use these capabilities
+
+h264parse - Parses H.264 streams
+    * not sure why this is important...
+    * bad?
+
+queue - Simple data queue
+    * acts as a buffer
+    * piles up data which can be accessed by another thread
+    * maybe we don't need this atm?
+
+rtph264pay - Payload-encode H264 video into RTP packets
+    *config-interval     : Send SPS and PPS Insertion Interval in seconds (sprop parameter sets will be multiplexed in the data stream when detected.) (0 = disabled, -1 = send with every IDR frame)
+    *pt                  : The payload type of the packets. Unsigned Integer. Range: 0 - 127 Default: 96
+    *we can probably dropt the pt=96 since it's the default
+
+gdppay - Payloads GStreamer Data Protocol buffers
+    *bad? maybe get rid of gdp on both ends...
+
+udpsink - Send data over the network via UDP
+    *defaults to port 5004, maybe we can drop both parameters and just send to default port
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&Better Way?&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+see the examples from this page: https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-good-plugins/html/gst-plugins-good-plugins-rtpbin.html
+presumably we can get more performance if we never mux and just hard code the video and audio streams?
+
+
+gst-launch-1.0 rtpbin name=rtpbin \
+        v4l2src ! videoconvert ! ffenc_h263 ! rtph263ppay ! rtpbin.send_rtp_sink_0 \
+                  rtpbin.send_rtp_src_0 ! udpsink port=5000                            \
+                  rtpbin.send_rtcp_src_0 ! udpsink port=5001 sync=false async=false    \
+                  udpsrc port=5005 ! rtpbin.recv_rtcp_sink_0                           \
+        audiotestsrc ! amrnbenc ! rtpamrpay ! rtpbin.send_rtp_sink_1                   \
+                  rtpbin.send_rtp_src_1 ! udpsink port=5002                            \
+                  rtpbin.send_rtcp_src_1 ! udpsink port=5003 sync=false async=false    \
+                  udpsrc port=5007 ! rtpbin.recv_rtcp_sink_1
+
+Encode and payload H263 video captured from a v4l2src. Encode and payload AMR audio generated from audiotestsrc. The video is sent to session 0 in rtpbin and the audio is sent to session 1. Video packets are sent on UDP port 5000 and audio packets on port 5002. The video RTCP packets for session 0 are sent on port 5001 and the audio RTCP packets for session 0 are sent on port 5003. RTCP packets for session 0 are received on port 5005 and RTCP for session 1 is received on port 5007. Since RTCP packets from the sender should be sent as soon as possible and do not participate in preroll, sync=false and async=false is configured on udpsink
+
+gst-launch-1.0 -v rtpbin name=rtpbin                                          \
+    udpsrc caps="application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H263-1998" \
+            port=5000 ! rtpbin.recv_rtp_sink_0                                \
+        rtpbin. ! rtph263pdepay ! ffdec_h263 ! xvimagesink                    \
+     udpsrc port=5001 ! rtpbin.recv_rtcp_sink_0                               \
+     rtpbin.send_rtcp_src_0 ! udpsink port=5005 sync=false async=false        \
+    udpsrc caps="application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1" \
+            port=5002 ! rtpbin.recv_rtp_sink_1                                \
+        rtpbin. ! rtpamrdepay ! amrnbdec ! alsasink                           \
+     udpsrc port=5003 ! rtpbin.recv_rtcp_sink_1                               \
+     rtpbin.send_rtcp_src_1 ! udpsink port=5007 sync=false async=false
+
+Receive H263 on port 5000, send it through rtpbin in session 0, depayload, decode and display the video. Receive AMR on port 5002, send it through rtpbin in session 1, depayload, decode and play the audio. Receive server RTCP packets for session 0 on port 5001 and RTCP packets for session 1 on port 5003. These packets will be used for session management and synchronisation. Send RTCP reports for session 0 on port 5005 and RTCP reports for session 1 on port 5007. 
