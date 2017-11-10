@@ -3,18 +3,8 @@
 gst-launch-1.0 udpsrc port=5000 ! gdpdepay ! rtph264depay ! avdec_h264 ! videoconvert ! videoflip method=rotate-180 ! autovideosink sync=false
 ``` new ways
 test removing suspected useless elements and not specifying default parameters
-gst-launch-1.0 udpsrc uri=udp://192.168.0.104 ! rtph264depay ! avdec_h264 ! videoflip method=rotate-180 ! autovideosink sync=false
-test using rtpbin instead
-gst-launch-1.0 -v rtpbin name=rtpbin                                          \
-    udpsrc caps="application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H263-1998" \
-            port=5000 ! rtpbin.recv_rtp_sink_0                                \
-        rtpbin. ! rtph263pdepay ! avdec_h263 ! xvimagesink                    \
-     udpsrc port=5001 ! rtpbin.recv_rtcp_sink_0                               \
-    udpsrc caps="application/x-rtp,media=(string)audio,clock-rate=(int)8000,encoding-name=(string)AMR,encoding-params=(string)1,octet-align=(string)1" \
-            port=5002 ! rtpbin.recv_rtp_sink_1                                \
-        rtpbin. ! rtpamrdepay ! amrnbdec ! alsasink                           \
-     udpsrc port=5003 ! rtpbin.recv_rtcp_sink_1                               \
-```
+gst-launch-1.0 udpsrc caps="application/x-rtp,media=(string)video,clock-rate=(int)90000,encoding-name=(string)H264" ! rtph264depay ! avdec_h264 ! videoflip method=rotate-180 ! autovideosink sync=false
+````
 
 udpsrc - souce element that gets input
     * can specify the source address from here with uri=udp://192.168.0.104:5000
@@ -54,21 +44,14 @@ playbin is an element that might just automatically do everything we need?
 gst-launch-1.0 rpicamsrc bitrate=1000000 ! 'video/x-h264,width=640,height=480' ! h264parse ! queue ! rtph264pay config-interval=1 pt=96 ! gdppay ! udpsink host=192.168.0.100 port=5000
 ```new ways
 test removing suspected useless elements and not specifying default parameters
-gst-launch-1.0 rpicamsrc bitrate=1000000 ! videoconvert ! 'video/x-h264,width=640,height=480' ! rtph264pay config-interval=1 ! udpsink
-test using rtpbin instead of all this other stuff TODO change audiotestsrc to whatever the mic will be
-gst-launch-1.0 rtpbin name=rtpbin \
-        rpicamsrc bitrate=1000000 ! videoconvert ! avenc_h263 ! rtph263ppay ! rtpbin.send_rtp_sink_0 \
-                  rtpbin.send_rtp_src_0 ! udpsink port=5000                            \
-                  rtpbin.send_rtcp_src_0 ! udpsink port=5001 sync=false async=false    \
-                  udpsrc port=5005 ! rtpbin.recv_rtcp_sink_0   
-        audiotestsrc ! amrnbenc ! rtpamrpay ! rtpbin.send_rtp_sink_1                   \
-                  rtpbin.send_rtp_src_1 ! udpsink port=5002                            \
-                  rtpbin.send_rtcp_src_1 ! udpsink port=5003 sync=false async=false    \
-                  udpsrc port=5007 ! rtpbin.recv_rtcp_sink_1
+gst-launch-1.0 rpicamsrc image-effect=16 drc=1 contrast=20 brightness=70 rotation=180 awb-mode=7 bitrate=1500000 ! 'video/x-h264,width=896,height=504' ! rtph264pay config-interval=1 ! udpsink host=192.168.1.6
+//psychedelic!
+gst-launch-1.0 rpicamsrc image-effect=16 drc=1 contrast=20 brightness=70 rotation=180 awb-mode=7 bitrate=0 quantisation-parameter=10 ! 'video/x-h264,width=896,height=504' ! rtph264pay config-interval=1 ! udpsink host=192.168.1.6
+
 ```
 
 rpicamsrc - gets video from the webcam on the rPi,
-    * TODO run this on the pi to get details
+    * tonnes of settings and effects (including rotate-180, sensor-mode, awb a.k.a auto white balance) def look into this
 
 'video/x-h264,width=640,height=480' - caps filter, forces linked elements to use these capabilities
 
